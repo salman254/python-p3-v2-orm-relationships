@@ -1,7 +1,4 @@
-# lib/department.py
-
 from __init__ import CURSOR, CONN
-
 
 class Department:
 
@@ -72,33 +69,23 @@ class Department:
     def delete(self):
         """Delete the table row corresponding to the current Department instance,
         delete the dictionary entry, and reassign id attribute"""
-
         sql = """
             DELETE FROM departments
             WHERE id = ?
         """
-
         CURSOR.execute(sql, (self.id,))
         CONN.commit()
-
-        # Delete the dictionary entry using id as the key
         del type(self).all[self.id]
-
-        # Set the id to None
         self.id = None
 
     @classmethod
     def instance_from_db(cls, row):
         """Return a Department object having the attribute values from the table row."""
-
-        # Check the dictionary for an existing instance using the row's primary key
         department = cls.all.get(row[0])
         if department:
-            # ensure attributes match row values in case local object was modified
             department.name = row[1]
             department.location = row[2]
         else:
-            # not in dictionary, create new instance and add to dictionary
             department = cls(row[1], row[2])
             department.id = row[0]
             cls.all[department.id] = department
@@ -111,9 +98,7 @@ class Department:
             SELECT *
             FROM departments
         """
-
         rows = CURSOR.execute(sql).fetchall()
-
         return [cls.instance_from_db(row) for row in rows]
 
     @classmethod
@@ -124,7 +109,6 @@ class Department:
             FROM departments
             WHERE id = ?
         """
-
         row = CURSOR.execute(sql, (id,)).fetchone()
         return cls.instance_from_db(row) if row else None
 
@@ -136,6 +120,16 @@ class Department:
             FROM departments
             WHERE name is ?
         """
-
         row = CURSOR.execute(sql, (name,)).fetchone()
         return cls.instance_from_db(row) if row else None
+
+    def employees(self):
+        """Return list of employees associated with current department"""
+        from employee import Employee  # avoid circular import
+        sql = """
+            SELECT * FROM employees
+            WHERE department_id = ?
+        """
+        CURSOR.execute(sql, (self.id,))
+        rows = CURSOR.fetchall()
+        return [Employee.instance_from_db(row) for row in rows]
